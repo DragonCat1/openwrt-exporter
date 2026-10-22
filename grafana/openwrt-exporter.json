@@ -442,7 +442,7 @@
     },
     {
       "type": "timeseries",
-      "title": "连接跟踪使用率",
+      "title": "连接跟踪数量",
       "id": 9,
       "gridPos": {
         "h": 7,
@@ -456,16 +456,51 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
+          "unit": "short",
           "min": 0,
-          "max": 1,
           "custom": {
-            "lineWidth": 1,
+            "lineWidth": 2,
             "fillOpacity": 15,
-            "showPoints": "never"
+            "showPoints": "never",
+            "drawStyle": "line",
+            "spanNulls": false
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "上限 (max)"
+            },
+            "properties": [
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "semi-dark-orange"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -478,11 +513,17 @@
       },
       "targets": [
         {
-          "expr": "openwrt_conntrack_entries{instance=~\"$instance\"} / openwrt_conntrack_max{instance=~\"$instance\"}",
-          "legendFormat": "conntrack fill",
+          "expr": "openwrt_conntrack_entries{instance=~\"$instance\"}",
+          "legendFormat": "连接数",
           "refId": "A"
+        },
+        {
+          "expr": "openwrt_conntrack_max{instance=~\"$instance\"}",
+          "legendFormat": "上限 (max)",
+          "refId": "B"
         }
-      ]
+      ],
+      "description": "主曲线：openwrt_conntrack_entries（当前连接数）；虚线参考：openwrt_conntrack_max（表容量）。"
     },
     {
       "type": "timeseries",
@@ -1302,6 +1343,6 @@
   "timezone": "browser",
   "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 6,
+  "version": 7,
   "weekStart": ""
 }
