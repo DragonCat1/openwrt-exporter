@@ -129,6 +129,7 @@ ubus call hostapd.wlan0 get_clients
 | DHCP 租约为 0 | 检查 `/tmp/dhcp.leases` 是否存在（dnsmasq）；odhcpd 路径可能不同 |
 | conntrack 报错 | 需加载 `nf_conntrack`；`ls /proc/sys/net/netfilter/nf_conntrack_count` |
 | CPU% 首次为 0 | 正常：需至少两次 scrape 才能差分 |
+| Grafana 协商速率多出 eth0/br-lan | Filogic DSA 上 eth0 多为内部 CPU 口（常 2500Mbps），br-* 桥 speed 易误导；仪表盘默认只画 `lanN`/`eth1`/`wan*`，见 [prometheus.md](./prometheus.md) |
 | 闪存空间紧 | 二进制约数 MB；可放 `/usr/bin` 或外置存储后改 init 中的 `PROG` |
 
 ## 6. 与 opkg
