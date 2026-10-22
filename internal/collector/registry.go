@@ -8,7 +8,7 @@ import (
 
 const namespace = "openwrt"
 
-// New 按模块开关注册 stub collector（后续实现真实 Collect）。
+// New 按模块开关注册真实 collector。
 func New(m config.Modules) []prometheus.Collector {
 	var cols []prometheus.Collector
 	if m.System {
