@@ -448,6 +448,7 @@
     {
       "type": "table",
       "title": "无线站点（设备信息）",
+      "description": "以 station_info 为底；signal/noise/phy/bps 均 * on(mac,iface) group_left(hostname,ip,ssid)，一行一设备。勿把未 join 的 iface+mac 指标直接并进表。",
       "id": 18,
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 44 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -459,24 +460,28 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Signal (dBm)" },
-            "properties": [{ "id": "unit", "value": "dBm" }]
+            "matcher": { "id": "byName", "options": "signal_dbm" },
+            "properties": [{ "id": "unit", "value": "dBm" }, { "id": "displayName", "value": "signal" }]
           },
           {
-            "matcher": { "id": "byName", "options": "RX bps" },
-            "properties": [{ "id": "unit", "value": "bps" }]
+            "matcher": { "id": "byName", "options": "noise_dbm" },
+            "properties": [{ "id": "unit", "value": "dBm" }, { "id": "displayName", "value": "noise" }]
           },
           {
-            "matcher": { "id": "byName", "options": "TX bps" },
-            "properties": [{ "id": "unit", "value": "bps" }]
+            "matcher": { "id": "byName", "options": "rx_phy_mbps" },
+            "properties": [{ "id": "unit", "value": "Mbps" }, { "id": "displayName", "value": "rx_phy" }]
           },
           {
-            "matcher": { "id": "byName", "options": "RX PHY Mbps" },
-            "properties": [{ "id": "unit", "value": "Mbps" }]
+            "matcher": { "id": "byName", "options": "tx_phy_mbps" },
+            "properties": [{ "id": "unit", "value": "Mbps" }, { "id": "displayName", "value": "tx_phy" }]
           },
           {
-            "matcher": { "id": "byName", "options": "TX PHY Mbps" },
-            "properties": [{ "id": "unit", "value": "Mbps" }]
+            "matcher": { "id": "byName", "options": "rx_bps" },
+            "properties": [{ "id": "unit", "value": "bps" }, { "id": "displayName", "value": "rx_bps" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "tx_bps" },
+            "properties": [{ "id": "unit", "value": "bps" }, { "id": "displayName", "value": "tx_bps" }]
           }
         ]
       },
@@ -487,20 +492,17 @@
         "sortBy": [{ "displayName": "hostname", "desc": false }]
       },
       "transformations": [
-        { "id": "labelsToFields", "options": {} },
-        {
-          "id": "merge",
-          "options": {}
-        },
+        { "id": "labelsToFields", "options": { "valueLabel": "metric" } },
+        { "id": "merge", "options": {} },
         {
           "id": "organize",
           "options": {
             "excludeByName": {
               "Time": true,
-              "Value": true,
               "__name__": true,
               "job": true,
-              "instance": false
+              "metric": true,
+              "Value #Info": true
             },
             "indexByName": {
               "hostname": 0,
@@ -508,14 +510,22 @@
               "mac": 2,
               "iface": 3,
               "ssid": 4,
-              "Signal (dBm)": 5,
-              "Noise (dBm)": 6,
-              "RX PHY Mbps": 7,
-              "TX PHY Mbps": 8,
-              "RX bps": 9,
-              "TX bps": 10
+              "Value #Signal": 5,
+              "Value #Noise": 6,
+              "Value #RxPhy": 7,
+              "Value #TxPhy": 8,
+              "Value #RxBps": 9,
+              "Value #TxBps": 10,
+              "instance": 11
             },
-            "renameByName": {}
+            "renameByName": {
+              "Value #Signal": "signal_dbm",
+              "Value #Noise": "noise_dbm",
+              "Value #RxPhy": "rx_phy_mbps",
+              "Value #TxPhy": "tx_phy_mbps",
+              "Value #RxBps": "rx_bps",
+              "Value #TxBps": "tx_bps"
+            }
           }
         }
       ],
@@ -527,46 +537,40 @@
           "refId": "Info"
         },
         {
-          "expr": "openwrt_wireless_station_signal_dbm{instance=~\"$instance\"}",
+          "expr": "openwrt_wireless_station_signal_dbm{instance=~\"$instance\"} * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "format": "table",
           "instant": true,
-          "refId": "Signal",
-          "legendFormat": "Signal (dBm)"
+          "refId": "Signal"
         },
         {
-          "expr": "openwrt_wireless_station_noise_dbm{instance=~\"$instance\"}",
+          "expr": "openwrt_wireless_station_noise_dbm{instance=~\"$instance\"} * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "format": "table",
           "instant": true,
-          "refId": "Noise",
-          "legendFormat": "Noise (dBm)"
+          "refId": "Noise"
         },
         {
-          "expr": "openwrt_wireless_station_receive_rate_mbps{instance=~\"$instance\"}",
+          "expr": "openwrt_wireless_station_receive_rate_mbps{instance=~\"$instance\"} * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "format": "table",
           "instant": true,
-          "refId": "RxPhy",
-          "legendFormat": "RX PHY Mbps"
+          "refId": "RxPhy"
         },
         {
-          "expr": "openwrt_wireless_station_transmit_rate_mbps{instance=~\"$instance\"}",
+          "expr": "openwrt_wireless_station_transmit_rate_mbps{instance=~\"$instance\"} * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "format": "table",
           "instant": true,
-          "refId": "TxPhy",
-          "legendFormat": "TX PHY Mbps"
+          "refId": "TxPhy"
         },
         {
-          "expr": "rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[5m]) * 8",
+          "expr": "(rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[5m]) * 8) * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "format": "table",
           "instant": true,
-          "refId": "RxBps",
-          "legendFormat": "RX bps"
+          "refId": "RxBps"
         },
         {
-          "expr": "rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[5m]) * 8",
+          "expr": "(rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[5m]) * 8) * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "format": "table",
           "instant": true,
-          "refId": "TxBps",
-          "legendFormat": "TX bps"
+          "refId": "TxBps"
         }
       ]
     },
@@ -651,6 +655,6 @@
   "timezone": "browser",
   "title": "OpenWrt Exporter",
   "uid": "openwrt-exporter",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }

@@ -71,6 +71,12 @@ rate(openwrt_wireless_station_transmit_bytes_total[5m]) * 8
 openwrt_wireless_station_info
 ```
 
+**Grafana 表为何必须 join**：`station_info` 带 `hostname/ip/ssid`，而 signal/noise/phy/字节只有 `iface+mac`。Table 里若直接并多个未对齐的 query，Prometheus 各系列各占一行，会出现「空 hostname」壳行。正确做法：以 `station_info` 为底，其它指标一律
+
+`* on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info`
+
+再 merge，保证**一行一设备**（见仪表盘「无线站点」面板）。
+
 连接表使用率：
 
 ```promql
