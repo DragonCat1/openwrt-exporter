@@ -683,7 +683,7 @@
     {
       "type": "timeseries",
       "title": "有线接口协商速率",
-      "description": "openwrt_network_speed_mbps；保留 eth/lan/br-*，排除 lo/wlan/phy/docker/veth；过滤 ≤0（含未知 -1）。",
+      "description": "与 LuCI「端口状态」同类：lanN / eth1 / wan*。排除 br-*（桥 speed 无意义）、lo/wlan/phy。Filogic DSA 上 eth0 多为接交换机的 CPU/SoC 口（常报 2500），LuCI 端口页不展示，本面板默认也不画；若你的 WAN 是 eth0，可把查询改成含 eth0 或改用 device 变量。过滤 ≤0（含未知 -1）。",
       "id": 20,
       "gridPos": {
         "h": 8,
@@ -724,7 +724,7 @@
       },
       "targets": [
         {
-          "expr": "openwrt_network_speed_mbps{instance=~\"$instance\", device=~\"$device\", device=~\"^(eth|lan|br-).*\", device!~\"^(lo|wlan|phy|docker|veth).*\"} > 0",
+          "expr": "openwrt_network_speed_mbps{instance=~\"$instance\", device=~\"$device\", device=~\"^(lan[0-9]+|eth1|wan.*)$\"} > 0",
           "legendFormat": "{{device}}",
           "refId": "A"
         }
@@ -1302,6 +1302,6 @@
   "timezone": "browser",
   "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 5,
+  "version": 6,
   "weekStart": ""
 }
