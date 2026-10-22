@@ -1,0 +1,12 @@
+# UCI 默认配置示例；亦可被命令行 flag 覆盖。
+# 安装路径：/etc/config/openwrt-exporter
+
+config openwrt-exporter 'main'
+	option enabled '1'
+	option listen ':9100'
+	option metrics_path '/metrics'
+	option collector_system '1'
+	option collector_netdev '1'
+	option collector_dhcp '1'
+	option collector_wireless '1'
+	option collector_bridge_fdb '1'
