@@ -79,10 +79,11 @@ openwrt_wireless_station_info
 
 再 merge，保证**一行一设备**（见仪表盘「无线站点」面板）。
 
-连接表使用率：
+连接跟踪数量（仪表盘主曲线用 entries；可选参考 max）：
 
 ```promql
-openwrt_conntrack_entries / openwrt_conntrack_max
+openwrt_conntrack_entries
+openwrt_conntrack_max
 ```
 
 CPU / 内存（已是 ratio，可直接面板显示为百分比 `* 100`）：
