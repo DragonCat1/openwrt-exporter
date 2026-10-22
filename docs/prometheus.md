@@ -31,7 +31,10 @@ scrape_configs:
 | `openwrt_network_up` / `carrier` | 口是否 up / 有载波 |
 | `openwrt_dhcp_leases` | 租约数 |
 | `openwrt_wireless_stations` | 无线关联站数 |
-| `openwrt_wireless_station_receive_bytes_total` / `transmit_bytes_total` | 每站字节 |
+| `openwrt_wireless_station_info` | 站点标识（labels：`iface`,`mac`,`hostname`,`ip`,`ssid`；无租约 → `-`） |
+| `openwrt_wireless_station_signal_dbm` / `noise_dbm` | 信号 / 噪声（labels：`iface+mac`） |
+| `openwrt_wireless_station_receive_rate_mbps` / `transmit_rate_mbps` | PHY 链路速率 Mbps |
+| `openwrt_wireless_station_receive_bytes_total` / `transmit_bytes_total` | 每站字节（`iface+mac`；吞吐用 `rate()`） |
 
 完整列表以 `/metrics` 为准。
 
@@ -50,11 +53,22 @@ rate(openwrt_network_transmit_bytes_total[5m]) * 8
 rate(openwrt_network_receive_bytes_total{device="br-lan"}[5m]) * 8
 ```
 
-无线每站吞吐：
+无线每站吞吐（带 hostname join）：
 
 ```promql
 rate(openwrt_wireless_station_receive_bytes_total[5m]) * 8
+  * on(instance, mac, iface) group_left(hostname, ip)
+  openwrt_wireless_station_info
+
 rate(openwrt_wireless_station_transmit_bytes_total[5m]) * 8
+  * on(instance, mac, iface) group_left(hostname, ip)
+  openwrt_wireless_station_info
+```
+
+站点设备表（MAC / 主机名 / IP）：
+
+```promql
+openwrt_wireless_station_info
 ```
 
 连接表使用率：

@@ -22,12 +22,50 @@ type DHCPCollector struct {
 	scrapeErrors *prometheus.Desc
 }
 
-func NewDHCP() *DHCPCollector {
-	return NewDHCPWithPaths([]string{
+func defaultLeasePaths() []string {
+	return []string{
 		"/tmp/dhcp.leases",
 		"/var/dhcp.leases",
 		"/tmp/hosts/odhcpd", // odhcpd 主机表（非标准 leases，作后备解析见下）
-	})
+	}
+}
+
+func NewDHCP() *DHCPCollector {
+	return NewDHCPWithPaths(defaultLeasePaths())
+}
+
+// leaseIndexByMAC 按小写 MAC 建索引，供无线等模块 join；文件皆缺失时返回空 map。
+func leaseIndexByMAC(paths []string) map[string]dhcpLease {
+	idx := make(map[string]dhcpLease)
+	for _, p := range paths {
+		leases, err := parseDHCPLeasesFile(p)
+		if err != nil {
+			continue
+		}
+		for _, l := range leases {
+			mac := strings.ToLower(l.mac)
+			if mac == "" {
+				continue
+			}
+			// 同 MAC 多租约时保留第一条有效记录
+			if _, ok := idx[mac]; !ok {
+				idx[mac] = l
+			}
+		}
+		if len(idx) > 0 {
+			return idx
+		}
+	}
+	return idx
+}
+
+// stableLeaseLabel 无租约/通配主机名时用 "-"，保证 Prometheus label 稳定。
+func stableLeaseLabel(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" || s == "*" {
+		return "-"
+	}
+	return s
 }
 
 func NewDHCPWithPaths(paths []string) *DHCPCollector {

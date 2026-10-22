@@ -12,7 +12,9 @@
 | netdev | 口状态（operstate/carrier）、接口 RX/TX 字节与包等 Counter |
 | dhcp | DHCP 租约 |
 | bridge_fdb | 有线设备接入（桥 FDB） |
-| wireless | 关联站与每站 RX/TX bytes（ubus hostapd） |
+| wireless | 关联站：hostname/IP（DHCP 按 MAC join）、SSID、信号/噪声、PHY 速率、RX/TX bytes |
+
+**无线标签策略**：`openwrt_wireless_station_info` 带齐 `iface/mac/hostname/ip/ssid`（无租约时为 `-`）；字节 Counter 与信号/速率 Gauge 仅 `iface+mac`，Grafana 用 `* on(mac)` / `group_left` join。详见 [docs/prometheus.md](docs/prometheus.md)。
 
 速率请用 Prometheus `rate()`，见 [docs/prometheus.md](docs/prometheus.md)。
 
