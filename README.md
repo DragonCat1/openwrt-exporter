@@ -1,59 +1,53 @@
 # openwrt-exporter
 
-面向 OpenWrt 的 Prometheus exporter（Go）。目标平台示例：MediaTek Filogic（约 512MB RAM）。
+面向 OpenWrt 的 Prometheus exporter（Go）。在路由上暴露系统健康、接口吞吐、DHCP/有线接入与无线 station 等指标；有线吞吐为**接口级**，**不做**有线每设备速率。默认读 `/proc`、sysfs、ubus，不做抓包。
 
-默认以读内核/宿主已有计数为主（`/proc`、sysfs、ubus hostapd），**不做抓包**；有线吞吐仅接口级，**不做有线每设备速率**。速率用 Prometheus `rate()`。
+目标平台示例：MediaTek Filogic（aarch64，约 512MB RAM）。
 
-## 指标概览
+## 功能
 
-| 模块 | 主要指标 | 数据源 |
-|------|----------|--------|
-| system | 负载、uptime、thermal、**CPU 使用率**、**内存使用率**、**conntrack 连接数** | `/proc/loadavg`、`/proc/uptime`、`/sys/class/thermal`、`/proc/stat` 差分、`/proc/meminfo`、`nf_conntrack_{count,max}` |
-| netdev | operstate/carrier/speed、RX/TX bytes/packets/errs/drop | `/proc/net/dev` + sysfs |
-| dhcp | 租约数与 lease_info | `/tmp/dhcp.leases`（后备 `/var/dhcp.leases`） |
-| bridge_fdb | 桥 FDB 接入（无 per-MAC 速率） | `/sys/class/net/*/brforward` |
-| wireless | 关联站、signal、每站 RX/TX bytes | `ubus call hostapd.<if> get_clients` |
+| 模块 | 内容 |
+|------|------|
+| system | 负载、uptime、CPU 温度、CPU 使用率、内存使用率、conntrack 连接数 |
+| netdev | 口状态（operstate/carrier）、接口 RX/TX 字节与包等 Counter |
+| dhcp | DHCP 租约 |
+| bridge_fdb | 有线设备接入（桥 FDB） |
+| wireless | 关联站与每站 RX/TX bytes（ubus hostapd） |
 
-### CPU / 内存 / 连接数
+速率请用 Prometheus `rate()`，见 [docs/prometheus.md](docs/prometheus.md)。
 
-- `openwrt_cpu_usage_ratio`：相邻两次 scrape 对 `/proc/stat` 做差分；**首次 scrape 为 0**。
-- `openwrt_memory_usage_ratio`：`1 - MemAvailable/MemTotal`。
-- `openwrt_conntrack_entries` / `openwrt_conntrack_max`：优先 `nf_conntrack_*`；模块未加载时 `openwrt_system_scrape_errors_total` 会记一笔（无 `/proc/net/nf_conntrack` 全表扫描后备，避免连接风暴热点）。
+## 快速使用
 
-### 无线（无 OpenWrt / 无 ubus 的环境）
+```bash
+# 本机
+./openwrt-exporter-linux-amd64 -listen :9100
+curl -s localhost:9100/metrics
 
-桌面与 CI 通常没有 `ubus`/`hostapd`：进程仍可编译运行，`openwrt_wireless_stations` 为 0，`openwrt_wireless_scrape_errors_total` ≥ 1。
-
-在路由器上验证：
-
-```sh
-ubus list 'hostapd.*'
-ubus call hostapd.wlan0 get_clients
-curl -s localhost:9100/metrics | grep openwrt_wireless
+# OpenWrt（Filogic / arm64）
+./openwrt-exporter-linux-arm64 -listen :9100
 ```
 
-## 本地构建与测试
+常用参数：`-listen`、`-web.telemetry-path`、`-uci`、`-collector.<模块名>`。
+
+预编译包见 [Releases](https://github.com/DragonCat1/openwrt-exporter/releases)。OpenWrt 安装、交叉编译与常见坑见 **[docs/deploy-openwrt.md](docs/deploy-openwrt.md)**。
+
+## 文档
+
+| 文档 | 说明 |
+|------|------|
+| [docs/deploy-openwrt.md](docs/deploy-openwrt.md) | 交叉编译、procd/UCI、安装路径、常见坑 |
+| [docs/prometheus.md](docs/prometheus.md) | scrape 配置、关键指标与 `rate()` 示例 |
+| [grafana/openwrt-exporter.json](grafana/openwrt-exporter.json) | Grafana 仪表盘（导入步骤见该文件旁说明 / prometheus 文档） |
+
+## 本地构建
 
 ```bash
 go test ./...
 go build -o bin/openwrt-exporter ./cmd/openwrt-exporter
-./bin/openwrt-exporter -listen :9100
-curl -s localhost:9100/metrics
 ```
 
-常用 flag：`-listen`、`-web.telemetry-path`、`-uci`、`-collector.<name>`。
+交叉编译（Filogic）：
 
-## OpenWrt 部署
-
-- [`openwrt/files/etc/init.d/openwrt-exporter`](openwrt/files/etc/init.d/openwrt-exporter) — procd，`respawn`，前台 Listen
-- [`openwrt/files/etc/config/openwrt-exporter`](openwrt/files/etc/config/openwrt-exporter) — UCI
-
-```sh
-/etc/init.d/openwrt-exporter enable
-/etc/init.d/openwrt-exporter start
+```bash
+GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags='-s -w' -o bin/openwrt-exporter-linux-arm64 ./cmd/openwrt-exporter
 ```
-
-## 范围外
-
-- 有线 per-MAC 速率（nft/eBPF/抓包）
-- 忙轮询 / 亚秒 ticker / 热路径频繁 fork CLI（无线 ubus 仅在 scrape 时调用）

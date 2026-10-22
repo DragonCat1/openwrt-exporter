@@ -12,6 +12,9 @@ import (
 	"github.com/DragonCat1/openwrt-exporter/internal/config"
 )
 
+// version 可由 -ldflags "-X main.version=v0.1.0" 注入。
+var version = "dev"
+
 func main() {
 	cfg := config.Parse(os.Args[1:])
 
@@ -22,11 +25,11 @@ func main() {
 	mux.Handle(cfg.MetricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(`<html><body><a href="` + cfg.MetricsPath + `">metrics</a></body></html>`))
+		_, _ = w.Write([]byte(`<html><body><h1>openwrt-exporter</h1><p>version ` + version + `</p><p><a href="` + cfg.MetricsPath + `">metrics</a></p></body></html>`))
 	})
 
 	addr := cfg.ListenAddress
-	log.Printf("openwrt-exporter listening on %s%s (modules=%v)", addr, cfg.MetricsPath, cfg.EnabledModuleNames())
+	log.Printf("openwrt-exporter %s listening on %s%s (modules=%v)", version, addr, cfg.MetricsPath, cfg.EnabledModuleNames())
 	// 前台 Listen；OpenWrt 上由 procd 托管，不自行 daemonize。
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatal(err)
