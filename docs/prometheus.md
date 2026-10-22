@@ -99,4 +99,4 @@ openwrt_memory_usage_ratio * 100
 3. 上传仓库中的 [`grafana/openwrt-exporter.json`](../grafana/openwrt-exporter.json)，或粘贴其内容。
 4. 选择 Prometheus 数据源 → Import。
 
-仪表盘覆盖：CPU%、内存%、负载、温度、uptime、conntrack、接口吞吐、DHCP 租约、无线站数等。若某面板无数据（如无 thermal / 无 ubus），对应图为空属正常。
+仪表盘覆盖：CPU%/内存%/负载/温度/运行时间、连接跟踪、接口吞吐、**有线接口协商速率**（`openwrt_network_speed_mbps`）、DHCP、无线站点表/在线状态/吞吐等。若某面板无数据（如无 thermal / 无 ubus），对应图为空属正常。

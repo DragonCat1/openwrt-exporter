@@ -39,7 +39,7 @@ curl -s localhost:9100/metrics
 |------|------|
 | [docs/deploy-openwrt.md](docs/deploy-openwrt.md) | 交叉编译、procd/UCI、安装路径、常见坑 |
 | [docs/prometheus.md](docs/prometheus.md) | scrape 配置、关键指标与 `rate()` 示例 |
-| [grafana/openwrt-exporter.json](grafana/openwrt-exporter.json) | Grafana 仪表盘（导入步骤见该文件旁说明 / prometheus 文档） |
+| [grafana/openwrt-exporter.json](grafana/openwrt-exporter.json) | Grafana 仪表盘（含有线协商速率、无线站点等；导入见 prometheus 文档） |
 
 ## 本地构建
 
