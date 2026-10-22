@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "OpenWrt Prometheus exporter：CPU/内存/负载/温度/uptime、conntrack、接口吞吐、DHCP 与无线概览。导入见 docs/prometheus.md。",
+  "description": "OpenWrt Prometheus exporter：系统、接口、DHCP、无线站点与在线状态。导入见 docs/prometheus.md。",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -91,7 +91,7 @@
     },
     {
       "type": "stat",
-      "title": "负载 (1m)",
+      "title": "1 分钟负载",
       "id": 3,
       "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -136,32 +136,52 @@
     },
     {
       "type": "stat",
-      "title": "Uptime",
+      "title": "运行时间",
       "id": 5,
       "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "fixed", "fixedColor": "text" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "text", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
       "targets": [
         {
           "expr": "openwrt_system_uptime_seconds{instance=~\"$instance\"}",
-          "legendFormat": "uptime",
+          "legendFormat": "运行时间",
           "refId": "A"
         }
       ]
     },
     {
       "type": "stat",
-      "title": "Conntrack",
+      "title": "连接跟踪",
       "id": 6,
       "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "none" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "fixed", "fixedColor": "text" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "text", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "none", "graphMode": "none" },
       "targets": [
         {
           "expr": "openwrt_conntrack_entries{instance=~\"$instance\"}",
-          "legendFormat": "entries",
+          "legendFormat": "连接数",
           "refId": "A"
         }
       ]
@@ -235,7 +255,7 @@
     },
     {
       "type": "timeseries",
-      "title": "Conntrack 使用率",
+      "title": "连接跟踪使用率",
       "id": 9,
       "gridPos": { "h": 7, "w": 12, "x": 0, "y": 13 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -262,7 +282,7 @@
     },
     {
       "type": "timeseries",
-      "title": "温度 (°C)",
+      "title": "温度",
       "id": 10,
       "gridPos": { "h": 7, "w": 12, "x": 12, "y": 13 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -295,7 +315,7 @@
     },
     {
       "type": "timeseries",
-      "title": "接口吞吐 (receive)",
+      "title": "接口接收吞吐",
       "id": 11,
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -320,7 +340,7 @@
     },
     {
       "type": "timeseries",
-      "title": "接口吞吐 (transmit)",
+      "title": "接口发送吞吐",
       "id": 12,
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 21 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -345,7 +365,7 @@
     },
     {
       "type": "timeseries",
-      "title": "接口 up / carrier",
+      "title": "接口链路状态",
       "id": 13,
       "gridPos": { "h": 6, "w": 24, "x": 0, "y": 29 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
@@ -575,10 +595,50 @@
       ]
     },
     {
-      "type": "timeseries",
-      "title": "无线每站吞吐 (bps)",
-      "id": 17,
+      "type": "state-timeline",
+      "title": "无线设备在线状态",
+      "description": "基于 openwrt_wireless_station_info：有序列为在线(1)，设备消失后无数据视为离线。",
+      "id": 19,
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 54 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "fillOpacity": 70, "lineWidth": 0, "spanNulls": false },
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "在线", "color": "green", "index": 0 } } },
+            { "type": "special", "options": { "match": "null", "result": { "text": "离线", "color": "transparent", "index": 1 } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "transparent", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "alignValue": "center",
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" },
+        "rowHeight": 0.8,
+        "showValue": "never",
+        "mergeValues": true
+      },
+      "targets": [
+        {
+          "expr": "openwrt_wireless_station_info{instance=~\"$instance\"}",
+          "legendFormat": "{{hostname}} | {{mac}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "无线设备吞吐",
+      "id": 17,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 62 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "fieldConfig": {
         "defaults": {
@@ -594,12 +654,12 @@
       "targets": [
         {
           "expr": "rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[5m]) * 8 * on(instance, mac, iface) group_left(hostname, ip) openwrt_wireless_station_info{instance=~\"$instance\"}",
-          "legendFormat": "{{hostname}} {{mac}} rx",
+          "legendFormat": "{{hostname}} {{mac}} 接收",
           "refId": "A"
         },
         {
           "expr": "rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[5m]) * 8 * on(instance, mac, iface) group_left(hostname, ip) openwrt_wireless_station_info{instance=~\"$instance\"}",
-          "legendFormat": "{{hostname}} {{mac}} tx",
+          "legendFormat": "{{hostname}} {{mac}} 发送",
           "refId": "B"
         }
       ]
@@ -653,8 +713,8 @@
   "time": { "from": "now-6h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "OpenWrt Exporter",
+  "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }

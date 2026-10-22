@@ -64,12 +64,12 @@ func NewWirelessWith(client ubus.Client, leasePaths []string) *WirelessCollector
 		),
 		rxRateMbps: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "wireless", "station_receive_rate_mbps"),
-			"Station RX PHY rate in Mbps (from hostapd rate.rx, typically kbps/1000).",
+			"Station RX PHY rate in Mbps (hostapd ubus rate.rx; see hostapdRateToMbps).",
 			idLabels, nil,
 		),
 		txRateMbps: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "wireless", "station_transmit_rate_mbps"),
-			"Station TX PHY rate in Mbps (from hostapd rate.tx, typically kbps/1000).",
+			"Station TX PHY rate in Mbps (hostapd ubus rate.tx; see hostapdRateToMbps).",
 			idLabels, nil,
 		),
 		rxBytes: prometheus.NewDesc(
@@ -259,7 +259,6 @@ func decodeStationMap(in map[string]json.RawMessage) (map[string]wifiStation, er
 				st.noiseSet = true
 			}
 		}
-		// hostapd ubus：rate.rx/tx 多为 kbps（与 LuCI 一致需 /1000 → Mbps）
 		if r, ok := obj["rate"]; ok {
 			var rate struct {
 				RX float64 `json:"rx"`
@@ -267,11 +266,11 @@ func decodeStationMap(in map[string]json.RawMessage) (map[string]wifiStation, er
 			}
 			if json.Unmarshal(r, &rate) == nil {
 				if rate.RX > 0 {
-					st.rxRateMbps = rate.RX / 1000.0
+					st.rxRateMbps = hostapdRateToMbps(rate.RX)
 					st.rxRateSet = true
 				}
 				if rate.TX > 0 {
-					st.txRateMbps = rate.TX / 1000.0
+					st.txRateMbps = hostapdRateToMbps(rate.TX)
 					st.txRateSet = true
 				}
 			}
@@ -279,4 +278,21 @@ func decodeStationMap(in map[string]json.RawMessage) (map[string]wifiStation, er
 		out[strings.ToLower(mac)] = st
 	}
 	return out, nil
+}
+
+// hostapdRateToMbps 将 hostapd ubus `rate.rx/tx` 转为 Mbps。
+//
+// OpenWrt ubus.c：`rate = current_*_rate * 100`，注释为 kbit/s；
+// 其中 current_*_rate 为驱动的 100kbps 单位 → 正常 ubus 值≈真正 kbps，÷1000 得 Mbps（与 LuCI 一致）。
+// 若驱动已直接给 kbps 仍被 *100，ubus 会大 100 倍（例如 468Mbps 变成 46800000 → 误算 46800Mbps）。
+// 单站 PHY >10Gbps 几乎不可能，此时再 ÷100 纠正。
+func hostapdRateToMbps(v float64) float64 {
+	if v <= 0 {
+		return 0
+	}
+	mbps := v / 1000.0
+	if mbps > 10000 {
+		mbps /= 100.0
+	}
+	return mbps
 }
