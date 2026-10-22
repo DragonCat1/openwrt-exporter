@@ -59,7 +59,9 @@ func (c *BridgeFDBCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	total := 0
+	// 同一 bridge/mac/port/is_local 可能在 brforward 中出现多次（VLAN/多路径等），
+	// Prometheus 禁止同名同 label 重复 emit，故按 label 键去重后再写出。
+	nonLocal := 0
 	for _, br := range bridges {
 		entries, err := readBrforward(filepath.Join(c.paths.Sys, "class", "net", br, "brforward"))
 		if err != nil {
@@ -67,21 +69,52 @@ func (c *BridgeFDBCollector) Collect(ch chan<- prometheus.Metric) {
 			errs++
 			continue
 		}
-		for _, e := range entries {
-			isLocal := "0"
-			if e.isLocal {
-				isLocal = "1"
-			} else {
-				total++
+		for _, e := range dedupeFDBEntries(br, entries) {
+			key := e.labelKey(br)
+			if !e.isLocal {
+				nonLocal++
 			}
 			ch <- prometheus.MustNewConstMetric(
 				c.entryInfo, prometheus.GaugeValue, 1,
-				br, e.mac, fmt.Sprintf("%d", e.portNo), isLocal,
+				key.bridge, key.mac, key.portNo, key.isLocal,
 			)
 		}
 	}
-	ch <- prometheus.MustNewConstMetric(c.entriesTotal, prometheus.GaugeValue, float64(total))
+	ch <- prometheus.MustNewConstMetric(c.entriesTotal, prometheus.GaugeValue, float64(nonLocal))
 	ch <- prometheus.MustNewConstMetric(c.scrapeErrors, prometheus.GaugeValue, errs)
+}
+
+// fdbLabelKey 与 entry_info 的 label 一一对应，用作去重键。
+type fdbLabelKey struct {
+	bridge, mac, portNo, isLocal string
+}
+
+func (e fdbEntry) labelKey(bridge string) fdbLabelKey {
+	isLocal := "0"
+	if e.isLocal {
+		isLocal = "1"
+	}
+	return fdbLabelKey{
+		bridge:  bridge,
+		mac:     e.mac,
+		portNo:  fmt.Sprintf("%d", e.portNo),
+		isLocal: isLocal,
+	}
+}
+
+// dedupeFDBEntries 在单桥内按 label 键去重，保留首次出现。
+func dedupeFDBEntries(bridge string, entries []fdbEntry) []fdbEntry {
+	seen := make(map[fdbLabelKey]struct{}, len(entries))
+	out := make([]fdbEntry, 0, len(entries))
+	for _, e := range entries {
+		k := e.labelKey(bridge)
+		if _, ok := seen[k]; ok {
+			continue
+		}
+		seen[k] = struct{}{}
+		out = append(out, e)
+	}
+	return out
 }
 
 func listBridges(netClass string) ([]string, error) {
