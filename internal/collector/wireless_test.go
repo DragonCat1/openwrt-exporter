@@ -169,3 +169,20 @@ func TestParseHostapdClientsTopLevel(t *testing.T) {
 		t.Fatalf("rate/noise: %#v", st)
 	}
 }
+
+func TestHostapdRateToMbps(t *testing.T) {
+	// 正常 kbit/s（LuCI ÷1000）
+	if g := hostapdRateToMbps(468000); g != 468 {
+		t.Fatalf("kbps path: got %v want 468", g)
+	}
+	if g := hostapdRateToMbps(866700); g != 866.7 {
+		t.Fatalf("kbps path hi: got %v", g)
+	}
+	// 驱动已给 kbps 再 *100 → ubus 大 100 倍（用户看到的 46800 Mbps）
+	if g := hostapdRateToMbps(46800000); g != 468 {
+		t.Fatalf("inflated path: got %v want 468", g)
+	}
+	if g := hostapdRateToMbps(58500000); g != 585 {
+		t.Fatalf("inflated tx: got %v want 585", g)
+	}
+}

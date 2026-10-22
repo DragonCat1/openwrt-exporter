@@ -33,7 +33,7 @@ scrape_configs:
 | `openwrt_wireless_stations` | 无线关联站数 |
 | `openwrt_wireless_station_info` | 站点标识（labels：`iface`,`mac`,`hostname`,`ip`,`ssid`；无租约 → `-`） |
 | `openwrt_wireless_station_signal_dbm` / `noise_dbm` | 信号 / 噪声（labels：`iface+mac`） |
-| `openwrt_wireless_station_receive_rate_mbps` / `transmit_rate_mbps` | PHY 链路速率 Mbps |
+| `openwrt_wireless_station_receive_rate_mbps` / `transmit_rate_mbps` | PHY 链路速率 Mbps（见下方换算） |
 | `openwrt_wireless_station_receive_bytes_total` / `transmit_bytes_total` | 每站字节（`iface+mac`；吞吐用 `rate()`） |
 
 完整列表以 `/metrics` 为准。
@@ -70,6 +70,8 @@ rate(openwrt_wireless_station_transmit_bytes_total[5m]) * 8
 ```promql
 openwrt_wireless_station_info
 ```
+
+**PHY 速率换算**：OpenWrt `hostapd` ubus 将驱动 `current_*_rate`（100kbps 单位）`×100` 后写入 `rate.rx/tx`，名义为 **kbit/s**，正常 **÷1000 → Mbps**（与 LuCI 一致）。若驱动已给 kbps 仍被 ×100，会出现约 100 倍偏大（如 468Mbps 显示成 46800）；exporter 在结果 >10Gbps 时再 ÷100 纠正。
 
 **Grafana 表为何必须 join**：`station_info` 带 `hostname/ip/ssid`，而 signal/noise/phy/字节只有 `iface+mac`。Table 里若直接并多个未对齐的 query，Prometheus 各系列各占一行，会出现「空 hostname」壳行。正确做法：以 `station_info` 为底，其它指标一律
 
