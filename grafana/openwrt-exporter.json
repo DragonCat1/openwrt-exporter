@@ -81,7 +81,7 @@
           ]
         },
         "colorMode": "value",
-        "graphMode": "area"
+        "graphMode": "none"
       },
       "targets": [
         {
@@ -137,7 +137,7 @@
           ]
         },
         "colorMode": "value",
-        "graphMode": "area"
+        "graphMode": "none"
       },
       "targets": [
         {
@@ -749,7 +749,7 @@
       "id": 14,
       "gridPos": {
         "h": 4,
-        "w": 6,
+        "w": 12,
         "x": 0,
         "y": 44
       },
@@ -770,7 +770,7 @@
           ]
         },
         "colorMode": "value",
-        "graphMode": "area"
+        "graphMode": "none"
       },
       "targets": [
         {
@@ -786,8 +786,8 @@
       "id": 15,
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 12,
+        "x": 12,
         "y": 44
       },
       "datasource": {
@@ -807,7 +807,7 @@
           ]
         },
         "colorMode": "value",
-        "graphMode": "area"
+        "graphMode": "none"
       },
       "targets": [
         {
@@ -823,9 +823,9 @@
       "id": 16,
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 44
+        "w": 24,
+        "x": 0,
+        "y": 48
       },
       "datasource": {
         "type": "prometheus",
@@ -873,7 +873,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 52
+        "y": 56
       },
       "datasource": {
         "type": "prometheus",
@@ -1108,7 +1108,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 62
+        "y": 66
       },
       "datasource": {
         "type": "prometheus",
@@ -1189,7 +1189,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 74
       },
       "datasource": {
         "type": "prometheus",
@@ -1302,6 +1302,6 @@
   "timezone": "browser",
   "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 4,
+  "version": 5,
   "weekStart": ""
 }
