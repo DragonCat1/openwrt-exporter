@@ -446,10 +446,135 @@
       ]
     },
     {
+      "type": "table",
+      "title": "无线站点（设备信息）",
+      "id": 18,
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 44 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "filterable": true },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Signal (dBm)" },
+            "properties": [{ "id": "unit", "value": "dBm" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "RX bps" },
+            "properties": [{ "id": "unit", "value": "bps" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "TX bps" },
+            "properties": [{ "id": "unit", "value": "bps" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "RX PHY Mbps" },
+            "properties": [{ "id": "unit", "value": "Mbps" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "TX PHY Mbps" },
+            "properties": [{ "id": "unit", "value": "Mbps" }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "sortBy": [{ "displayName": "hostname", "desc": false }]
+      },
+      "transformations": [
+        { "id": "labelsToFields", "options": {} },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "job": true,
+              "instance": false
+            },
+            "indexByName": {
+              "hostname": 0,
+              "ip": 1,
+              "mac": 2,
+              "iface": 3,
+              "ssid": 4,
+              "Signal (dBm)": 5,
+              "Noise (dBm)": 6,
+              "RX PHY Mbps": 7,
+              "TX PHY Mbps": 8,
+              "RX bps": 9,
+              "TX bps": 10
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "openwrt_wireless_station_info{instance=~\"$instance\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "Info"
+        },
+        {
+          "expr": "openwrt_wireless_station_signal_dbm{instance=~\"$instance\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "Signal",
+          "legendFormat": "Signal (dBm)"
+        },
+        {
+          "expr": "openwrt_wireless_station_noise_dbm{instance=~\"$instance\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "Noise",
+          "legendFormat": "Noise (dBm)"
+        },
+        {
+          "expr": "openwrt_wireless_station_receive_rate_mbps{instance=~\"$instance\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "RxPhy",
+          "legendFormat": "RX PHY Mbps"
+        },
+        {
+          "expr": "openwrt_wireless_station_transmit_rate_mbps{instance=~\"$instance\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "TxPhy",
+          "legendFormat": "TX PHY Mbps"
+        },
+        {
+          "expr": "rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[5m]) * 8",
+          "format": "table",
+          "instant": true,
+          "refId": "RxBps",
+          "legendFormat": "RX bps"
+        },
+        {
+          "expr": "rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[5m]) * 8",
+          "format": "table",
+          "instant": true,
+          "refId": "TxBps",
+          "legendFormat": "TX bps"
+        }
+      ]
+    },
+    {
       "type": "timeseries",
       "title": "无线每站吞吐 (bps)",
       "id": 17,
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 54 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "fieldConfig": {
         "defaults": {
@@ -464,13 +589,13 @@
       },
       "targets": [
         {
-          "expr": "rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[5m]) * 8",
-          "legendFormat": "{{iface}} {{mac}} rx",
+          "expr": "rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[5m]) * 8 * on(instance, mac, iface) group_left(hostname, ip) openwrt_wireless_station_info{instance=~\"$instance\"}",
+          "legendFormat": "{{hostname}} {{mac}} rx",
           "refId": "A"
         },
         {
-          "expr": "rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[5m]) * 8",
-          "legendFormat": "{{iface}} {{mac}} tx",
+          "expr": "rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[5m]) * 8 * on(instance, mac, iface) group_left(hostname, ip) openwrt_wireless_station_info{instance=~\"$instance\"}",
+          "legendFormat": "{{hostname}} {{mac}} tx",
           "refId": "B"
         }
       ]
