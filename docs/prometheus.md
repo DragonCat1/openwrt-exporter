@@ -32,6 +32,7 @@ scrape_configs:
 | `openwrt_dhcp_leases` | 租约数 |
 | `openwrt_wireless_stations` | 无线关联站数 |
 | `openwrt_wireless_station_info` | 站点标识（labels：`iface`,`mac`,`hostname`,`ip`,`ssid`；无租约 → `-`） |
+| `openwrt_wireless_station_up` | 当前关联（value 1；**仅 `mac` label**，每 mac 只 scrape 一次；给 State timeline 用） |
 | `openwrt_wireless_station_signal_dbm` / `noise_dbm` | 信号 / 噪声（labels：`iface+mac`） |
 | `openwrt_wireless_station_receive_rate_mbps` / `transmit_rate_mbps` | PHY 链路速率 Mbps（见下方换算） |
 | `openwrt_wireless_station_receive_bytes_total` / `transmit_bytes_total` | 每站字节（`iface+mac`；吞吐用 `rate()`） |
@@ -79,7 +80,13 @@ openwrt_wireless_station_info
 
 再 merge，保证**一行一设备**（见仪表盘「无线站点」面板）。
 
-**在线状态（同 MAC 一行 + 显示主机名）**：不要在 Range 查询上 `group_left(hostname)`——TSDB 里同 mac 若曾有 `hostname="-"` 与具名两条时序，State timeline 会按 label 集拆成两行。正确做法见仪表盘「无线设备在线状态」：**Query A（Range）** `max by (instance, mac) (openwrt_wireless_station_info)`（无 hostname）；**Query B（Instant）** `topk` 取当前最新 hostname（非 `-` 优先）并 `label_join` 为 `display`；Grafana **Join by field (mac) + Partition by mac**，显示名 `${__data.fields.display}`。改 JSON 后须**重新导入**仪表盘。
+**在线状态（同 MAC 一行）**：用 `openwrt_wireless_station_up`（仅 `mac`，无 hostname）。Timeline：
+
+```promql
+max by (mac) (openwrt_wireless_station_up{instance=~"$instance"})
+```
+
+图例 `{{mac}}`。**不要**对 State timeline 做 `labelsToFields` / `Join` / `Partition`（会拆成碎行）。最新主机名用旁路 Instant 表查 `station_info`（仪表盘「MAC / 最新主机名」）。Prometheus 无法改写历史 label，故 Y 轴稳定身份只能是 mac。需 exporter ≥ v0.1.4，并**重新导入** dashboard。
 
 连接跟踪数量（仪表盘主曲线用 entries；可选参考 max）：
 
