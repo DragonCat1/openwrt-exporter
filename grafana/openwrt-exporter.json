@@ -1143,7 +1143,7 @@
     {
       "type": "state-timeline",
       "title": "无线设备在线状态",
-      "description": "同 MAC 只一行：Query A（Range）= max by (instance,mac)，结果不带 hostname label，Range 内历史 hostname=\"-\"/具名不会拆行。Query B（Instant）= topk 取当前最新 hostname（非 \"-\" 优先）并 label_join 为 display。Transform：labelsToFields → Join by mac → Partition by mac；显示名 ${__data.fields.display}（即 hostname | mac）。必须重新导入 dashboard JSON，旧 panel 不会自动更新。",
+      "description": "同 MAC 只一行：先 max by (instance,mac)；右侧再 max by (instance,mac,hostname) + topk 保证每个 mac 仅一条 hostname（优先非 \"-\"），然后 group_left——避免右侧多条时一对多展开成 `-|mac` 与具名两行。图例 {{hostname}} | {{mac}}。勿把 ip/ssid 放入分组。",
       "id": 19,
       "gridPos": {
         "h": 8,
@@ -1197,8 +1197,7 @@
                 "value": 1
               }
             ]
-          },
-          "displayName": "${__data.fields.display}"
+          }
         },
         "overrides": []
       },
@@ -1217,74 +1216,9 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "max by (instance, mac) (openwrt_wireless_station_info{instance=~\"$instance\"})",
-          "format": "time_series",
-          "instant": false,
-          "legendFormat": "{{mac}}",
-          "range": true,
+          "expr": "max by (instance, mac) (openwrt_wireless_station_info{instance=~\"$instance\"}) * on (instance, mac) group_left (hostname) ( (topk by (instance, mac) (1, max by (instance, mac, hostname) ( (openwrt_wireless_station_info{instance=~\"$instance\", hostname!=\"-\"} * 10) or openwrt_wireless_station_info{instance=~\"$instance\"} ) )) > bool 0)",
+          "legendFormat": "{{hostname}} | {{mac}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "label_join(topk by (instance, mac) (1, max by (instance, mac, hostname) ((openwrt_wireless_station_info{instance=~\"$instance\", hostname!=\"-\"} * 10) or openwrt_wireless_station_info{instance=~\"$instance\"})), \"display\", \" | \", \"hostname\", \"mac\")",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "{{display}}",
-          "range": false,
-          "refId": "B"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "labelsToFields",
-          "options": {
-            "keepLabels": [
-              "mac",
-              "hostname",
-              "display",
-              "instance"
-            ]
-          }
-        },
-        {
-          "id": "joinByField",
-          "options": {
-            "byField": "mac",
-            "mode": "outer"
-          }
-        },
-        {
-          "id": "partitionByValues",
-          "options": {
-            "fields": [
-              "mac"
-            ],
-            "keepFields": true
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "exclude": {
-              "names": [
-                "Value #B",
-                "Time #B",
-                "__name__",
-                "job",
-                "instance",
-                "hostname"
-              ]
-            }
-          }
         }
       ]
     },
@@ -1409,6 +1343,6 @@
   "timezone": "browser",
   "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 11,
+  "version": 10,
   "weekStart": ""
 }
