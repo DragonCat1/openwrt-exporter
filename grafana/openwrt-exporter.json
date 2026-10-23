@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "OpenWrt Prometheus exporter：系统、接口、DHCP、无线站点与在线状态（station_up）。导入见 docs/prometheus.md；在线面板需 exporter ≥ v0.1.4。",
+  "description": "OpenWrt Prometheus exporter：系统、接口、DHCP、无线站点与在线状态。导入见 docs/prometheus.md；在线面板需 exporter ≥ v0.1.4。",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -1143,11 +1143,11 @@
     {
       "type": "state-timeline",
       "title": "无线设备在线状态",
-      "description": "一行一 MAC：用 openwrt_wireless_station_up（仅 mac label，无 hostname）。查询 max by (mac)；图例 {{mac}}。勿加 labelsToFields/Join/Partition。最新主机名见右侧「MAC / 最新主机名」表（Instant）。须重新导入本 JSON，并升级 exporter ≥ v0.1.4 才有 station_up。",
+      "description": "一行一 MAC：openwrt_wireless_station_up（仅 mac label）。查询 max by (mac)；图例 {{mac}}。勿加 labelsToFields/Join/Partition。Y 轴为 MAC（Prometheus 无法改写历史 hostname label）。须重新导入本 JSON；exporter ≥ v0.1.4。",
       "id": 19,
       "gridPos": {
         "h": 8,
-        "w": 16,
+        "w": 24,
         "x": 0,
         "y": 66
       },
@@ -1227,89 +1227,6 @@
           "legendFormat": "{{mac}}",
           "range": true,
           "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "table",
-      "title": "MAC / 最新主机名",
-      "description": "Instant：当前关联站的 mac→hostname（来自 station_info，非 `-` 优先）。供对照左侧 timeline（Y 轴为 mac）。勿把本表 Transform 接到 timeline。",
-      "id": 21,
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 66
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "filterable": true
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
-        },
-        "sortBy": [
-          {
-            "displayName": "hostname",
-            "desc": false
-          }
-        ]
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "editorMode": "code",
-          "expr": "topk by (mac) (1, max by (mac, hostname) ((openwrt_wireless_station_info{instance=~\"$instance\", hostname!=\"-\"} * 10) or openwrt_wireless_station_info{instance=~\"$instance\"}))",
-          "format": "table",
-          "instant": true,
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "labelsToFields",
-          "options": {
-            "keepLabels": [
-              "mac",
-              "hostname"
-            ]
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "__name__": true,
-              "Value": true,
-              "job": true,
-              "instance": true,
-              "iface": true,
-              "ip": true,
-              "ssid": true
-            },
-            "indexByName": {
-              "hostname": 0,
-              "mac": 1
-            },
-            "renameByName": {}
-          }
         }
       ]
     },
@@ -1434,6 +1351,6 @@
   "timezone": "browser",
   "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 12,
+  "version": 13,
   "weekStart": ""
 }

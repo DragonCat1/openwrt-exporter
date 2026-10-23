@@ -86,7 +86,7 @@ openwrt_wireless_station_info
 max by (mac) (openwrt_wireless_station_up{instance=~"$instance"})
 ```
 
-图例 `{{mac}}`。**不要**对 State timeline 做 `labelsToFields` / `Join` / `Partition`（会拆成碎行）。最新主机名用旁路 Instant 表查 `station_info`（仪表盘「MAC / 最新主机名」）。Prometheus 无法改写历史 label，故 Y 轴稳定身份只能是 mac。需 exporter ≥ v0.1.4，并**重新导入** dashboard。
+图例 `{{mac}}`。**不要**对 State timeline 做 `labelsToFields` / `Join` / `Partition`（会拆成碎行）。时间线 Y 轴为 MAC（Prometheus 无法改写历史 hostname label）。需 exporter ≥ v0.1.4，并**重新导入** dashboard。
 
 连接跟踪数量（仪表盘主曲线用 entries；可选参考 max）：
 
