@@ -1143,7 +1143,7 @@
     {
       "type": "state-timeline",
       "title": "无线设备在线状态",
-      "description": "按 mac 聚合在线(1)，避免 station_info 的 hostname/ip/ssid 变化产生重复行；`-` 与 DHCP 补全后的具名会合并为一条。图例为 MAC（hostname 见「无线站点」表）。同 hostname 不同 MAC（随机 MAC）仍为两行。设备消失视为离线。",
+      "description": "同 MAC 只一行：max by (instance, mac) 去掉 ip/ssid 等分裂维度；再用 group_left(hostname) 挂上当前主机名（优先非 \"-\"）。图例：hostname | mac。勿把 ip/ssid 放入本面板分组。同 hostname 不同 MAC 仍为两行。设备消失视为离线。",
       "id": 19,
       "gridPos": {
         "h": 8,
@@ -1216,8 +1216,8 @@
       },
       "targets": [
         {
-          "expr": "max by (instance, mac) (openwrt_wireless_station_info{instance=~\"$instance\"})",
-          "legendFormat": "{{mac}}",
+          "expr": "max by (instance, mac) (openwrt_wireless_station_info{instance=~\"$instance\"}) * on (instance, mac) group_left (hostname) (topk by (instance, mac) (1, (openwrt_wireless_station_info{instance=~\"$instance\", hostname!=\"-\"} * 10) or openwrt_wireless_station_info{instance=~\"$instance\"}) > bool 0)",
+          "legendFormat": "{{hostname}} | {{mac}}",
           "refId": "A"
         }
       ]
@@ -1343,6 +1343,6 @@
   "timezone": "browser",
   "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 8,
+  "version": 9,
   "weekStart": ""
 }
