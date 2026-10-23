@@ -79,6 +79,8 @@ openwrt_wireless_station_info
 
 再 merge，保证**一行一设备**（见仪表盘「无线站点」面板）。
 
+**在线状态为何按 mac 聚合**：`station_info` 的 hostname/ip/ssid 会随 DHCP 补全或续租变化，直接画 timeline 会把同一 MAC 拆成多行（含 `-|mac` 与具名各一行）。面板使用 `max by (instance, mac) (openwrt_wireless_station_info)`，系列维度不含 ip/ssid/hostname；图例为 MAC，主机名见站点表。同 hostname 不同 MAC 仍为两行（正确）。
+
 连接跟踪数量（仪表盘主曲线用 entries；可选参考 max）：
 
 ```promql
