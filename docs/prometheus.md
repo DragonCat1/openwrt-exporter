@@ -79,7 +79,7 @@ openwrt_wireless_station_info
 
 再 merge，保证**一行一设备**（见仪表盘「无线站点」面板）。
 
-**在线状态按 mac 聚合且保留主机名**：`station_info` 含 hostname/ip/ssid，直接画 timeline 易拆行。须先 `max by (instance, mac)`，再 `group_left(hostname)`——且**右侧每个 (instance,mac) 只能有一条**（先 `max by (instance, mac, hostname)`，再 `topk by (instance, mac) (1, …)`，优先 `hostname!="-"`）。若右侧同 mac 同时存在 `-` 与具名，`group_left` 会一对多展开又变两行。图例 `{{hostname}} | {{mac}}`。同 hostname 不同 MAC 仍为两行（正确）。
+**在线状态（同 MAC 一行 + 显示主机名）**：不要在 Range 查询上 `group_left(hostname)`——TSDB 里同 mac 若曾有 `hostname="-"` 与具名两条时序，State timeline 会按 label 集拆成两行。正确做法见仪表盘「无线设备在线状态」：**Query A（Range）** `max by (instance, mac) (openwrt_wireless_station_info)`（无 hostname）；**Query B（Instant）** `topk` 取当前最新 hostname（非 `-` 优先）并 `label_join` 为 `display`；Grafana **Join by field (mac) + Partition by mac**，显示名 `${__data.fields.display}`。改 JSON 后须**重新导入**仪表盘。
 
 连接跟踪数量（仪表盘主曲线用 entries；可选参考 max）：
 
