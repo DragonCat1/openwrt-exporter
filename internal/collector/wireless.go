@@ -12,15 +12,13 @@ import (
 )
 
 // WirelessCollector 无线关联站：ubus hostapd.get_clients + DHCP 租约按 MAC join。
-// station_info 带 hostname/ip/ssid；station_up 仅 mac（State timeline 稳定一行）；
-// 字节 Counter 与速率 Gauge 仅 iface+mac，避免 label 基数膨胀。
+// station_info 带 hostname/ip/ssid；字节 Counter 与速率 Gauge 仅 iface+mac，避免 label 基数膨胀。
 type WirelessCollector struct {
 	client     ubus.Client
 	leasePaths []string
 
 	stations      *prometheus.Desc
 	stationInfo   *prometheus.Desc
-	stationUp     *prometheus.Desc
 	stationSignal *prometheus.Desc
 	stationNoise  *prometheus.Desc
 	rxRateMbps    *prometheus.Desc
@@ -53,11 +51,6 @@ func NewWirelessWith(client ubus.Client, leasePaths []string) *WirelessCollector
 			prometheus.BuildFQName(namespace, "wireless", "station_info"),
 			"Associated station present (value 1). hostname/ip from DHCP lease join by MAC; missing → \"-\".",
 			infoLabels, nil,
-		),
-		stationUp: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, "wireless", "station_up"),
-			"1 if station currently associated. Label: mac only (one series per MAC for Grafana state-timeline; hostname stays on station_info).",
-			[]string{"mac"}, nil,
 		),
 		stationSignal: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "wireless", "station_signal_dbm"),
@@ -100,7 +93,6 @@ func NewWirelessWith(client ubus.Client, leasePaths []string) *WirelessCollector
 func (c *WirelessCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.stations
 	ch <- c.stationInfo
-	ch <- c.stationUp
 	ch <- c.stationSignal
 	ch <- c.stationNoise
 	ch <- c.rxRateMbps
@@ -127,7 +119,6 @@ func (c *WirelessCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	total := 0
-	emittedUp := make(map[string]struct{})
 	for _, path := range ifaces {
 		if !strings.HasPrefix(path, "hostapd.") {
 			continue
@@ -150,11 +141,6 @@ func (c *WirelessCollector) Collect(ch chan<- prometheus.Metric) {
 
 			total++
 			ch <- prometheus.MustNewConstMetric(c.stationInfo, prometheus.GaugeValue, 1, iface, mac, host, ip, ssidLabel)
-			// 每个 mac 只 emit 一次 up（无 hostname），保证 timeline 一行一设备
-			if _, ok := emittedUp[mac]; !ok {
-				emittedUp[mac] = struct{}{}
-				ch <- prometheus.MustNewConstMetric(c.stationUp, prometheus.GaugeValue, 1, mac)
-			}
 			ch <- prometheus.MustNewConstMetric(c.rxBytes, prometheus.CounterValue, st.rxBytes, iface, mac)
 			ch <- prometheus.MustNewConstMetric(c.txBytes, prometheus.CounterValue, st.txBytes, iface, mac)
 			if st.signalSet {
