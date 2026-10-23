@@ -79,6 +79,8 @@ openwrt_wireless_station_info
 
 再 merge，保证**一行一设备**（见仪表盘「无线站点」面板）。
 
+**在线状态**：`max by (instance, hostname, mac) (openwrt_wireless_station_info)`，图例 `{{hostname}} | {{mac}}`。同 hostname+mac 合并；**同 MAC 不同 hostname 仍分行**（历史 label 无法合并）。改 JSON 后须重新导入仪表盘。
+
 连接跟踪数量（仪表盘主曲线用 entries；可选参考 max）：
 
 ```promql

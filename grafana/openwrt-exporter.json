@@ -1143,7 +1143,7 @@
     {
       "type": "state-timeline",
       "title": "无线设备在线状态",
-      "description": "基于 openwrt_wireless_station_info：有序列为在线(1)，设备消失后无数据视为离线。",
+      "description": "max by (instance, hostname, mac)：同 hostname+mac 合并为一行；同 MAC 不同 hostname 仍分行（Prometheus 历史 label 限制）。图例 {{hostname}} | {{mac}}。须重新导入 dashboard。",
       "id": 19,
       "gridPos": {
         "h": 8,
@@ -1216,9 +1216,17 @@
       },
       "targets": [
         {
-          "expr": "openwrt_wireless_station_info{instance=~\"$instance\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "editorMode": "code",
+          "expr": "max by (instance, hostname, mac) (openwrt_wireless_station_info{instance=~\"$instance\"})",
           "legendFormat": "{{hostname}} | {{mac}}",
-          "refId": "A"
+          "refId": "A",
+          "range": true,
+          "instant": false,
+          "format": "time_series"
         }
       ]
     },
@@ -1343,6 +1351,6 @@
   "timezone": "browser",
   "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 7,
+  "version": 8,
   "weekStart": ""
 }
