@@ -65,6 +65,7 @@ func TestWirelessCollectorMockUbus(t *testing.T) {
 	mfs := collectAll(t, c)
 	assertGauge(t, mfs, "openwrt_wireless_stations", 1)
 	assertGauge(t, mfs, "openwrt_wireless_scrape_errors_total", 0)
+	assertGauge(t, mfs, "openwrt_wireless_station_up", 1)
 
 	rx := mfs["openwrt_wireless_station_receive_bytes_total"]
 	if rx == nil || len(rx.Metric) != 1 || rx.Metric[0].Counter.GetValue() != 100 {
@@ -78,6 +79,18 @@ func TestWirelessCollectorMockUbus(t *testing.T) {
 	labels := metricLabels(info.Metric[0])
 	if labels["hostname"] != "-" || labels["ip"] != "-" || labels["ssid"] != "HomeWiFi" {
 		t.Fatalf("missing lease should be '-', ssid filled: %#v", labels)
+	}
+
+	up := mfs["openwrt_wireless_station_up"]
+	if up == nil || len(up.Metric) != 1 {
+		t.Fatalf("want 1 station_up, got %#v", up)
+	}
+	upLabels := metricLabels(up.Metric[0])
+	if upLabels["mac"] != "aa:bb:cc:dd:ee:ff" {
+		t.Fatalf("station_up mac: %#v", upLabels)
+	}
+	if _, ok := upLabels["hostname"]; ok {
+		t.Fatalf("station_up must not carry hostname: %#v", upLabels)
 	}
 
 	assertGauge(t, mfs, "openwrt_wireless_station_receive_rate_mbps", 144.4)
@@ -135,6 +148,44 @@ func TestWirelessJoinDHCPLease(t *testing.T) {
 		if _, ok := lm["hostname"]; ok {
 			t.Fatalf("bytes should not carry hostname: %#v", lm)
 		}
+	}
+
+	up := mfs["openwrt_wireless_station_up"]
+	if up == nil || len(up.Metric) != 2 {
+		t.Fatalf("want 2 station_up (one per mac), got %#v", up)
+	}
+	for _, m := range up.Metric {
+		lm := metricLabels(m)
+		if _, ok := lm["hostname"]; ok {
+			t.Fatalf("station_up must not carry hostname: %#v", lm)
+		}
+		if lm["mac"] == "" {
+			t.Fatalf("station_up missing mac: %#v", lm)
+		}
+	}
+}
+
+func TestWirelessStationUpOnePerMAC(t *testing.T) {
+	// 同 MAC 出现在两个 hostapd iface 时，station_up 仍只 emit 一次
+	payload := []byte(`{"clients":{"aa:bb:cc:dd:ee:ff":{"signal":-50}}}`)
+	client := &mockUbus{
+		list: []string{"hostapd.wlan0", "hostapd.wlan1"},
+		resp: map[string]json.RawMessage{
+			"hostapd.wlan0|get_clients": payload,
+			"hostapd.wlan1|get_clients": payload,
+			"hostapd.wlan0|get_status":  []byte(`{"ssid":"A"}`),
+			"hostapd.wlan1|get_status":  []byte(`{"ssid":"B"}`),
+		},
+	}
+	c := NewWirelessWith(client, []string{"/no/leases"})
+	mfs := collectAll(t, c)
+	up := mfs["openwrt_wireless_station_up"]
+	if up == nil || len(up.Metric) != 1 {
+		t.Fatalf("want exactly 1 station_up for duplicate mac, got %#v", up)
+	}
+	info := mfs["openwrt_wireless_station_info"]
+	if info == nil || len(info.Metric) != 2 {
+		t.Fatalf("want 2 station_info (per iface), got %#v", info)
 	}
 }
 

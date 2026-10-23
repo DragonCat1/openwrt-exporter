@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "OpenWrt Prometheus exporter：系统、接口、DHCP、无线站点与在线状态。导入见 docs/prometheus.md。",
+  "description": "OpenWrt Prometheus exporter：系统、接口、DHCP、无线站点与在线状态（station_up）。导入见 docs/prometheus.md；在线面板需 exporter ≥ v0.1.4。",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -1143,11 +1143,11 @@
     {
       "type": "state-timeline",
       "title": "无线设备在线状态",
-      "description": "同 MAC 只一行：Query A（Range）= max by (instance,mac)，结果不带 hostname label，Range 内历史 hostname=\"-\"/具名不会拆行。Query B（Instant）= topk 取当前最新 hostname（非 \"-\" 优先）并 label_join 为 display。Transform：labelsToFields → Join by mac → Partition by mac；显示名 ${__data.fields.display}（即 hostname | mac）。必须重新导入 dashboard JSON，旧 panel 不会自动更新。",
+      "description": "一行一 MAC：用 openwrt_wireless_station_up（仅 mac label，无 hostname）。查询 max by (mac)；图例 {{mac}}。勿加 labelsToFields/Join/Partition。最新主机名见右侧「MAC / 最新主机名」表（Instant）。须重新导入本 JSON，并升级 exporter ≥ v0.1.4 才有 station_up。",
       "id": 19,
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 16,
         "x": 0,
         "y": 66
       },
@@ -1197,8 +1197,7 @@
                 "value": 1
               }
             ]
-          },
-          "displayName": "${__data.fields.display}"
+          }
         },
         "overrides": []
       },
@@ -1222,25 +1221,64 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "max by (instance, mac) (openwrt_wireless_station_info{instance=~\"$instance\"})",
+          "expr": "max by (mac) (openwrt_wireless_station_up{instance=~\"$instance\"})",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{mac}}",
           "range": true,
           "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "MAC / 最新主机名",
+      "description": "Instant：当前关联站的 mac→hostname（来自 station_info，非 `-` 优先）。供对照左侧 timeline（Y 轴为 mac）。勿把本表 Transform 接到 timeline。",
+      "id": 21,
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 66
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
         },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "hostname",
+            "desc": false
+          }
+        ]
+      },
+      "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "label_join(topk by (instance, mac) (1, max by (instance, mac, hostname) ((openwrt_wireless_station_info{instance=~\"$instance\", hostname!=\"-\"} * 10) or openwrt_wireless_station_info{instance=~\"$instance\"})), \"display\", \" | \", \"hostname\", \"mac\")",
+          "expr": "topk by (mac) (1, max by (mac, hostname) ((openwrt_wireless_station_info{instance=~\"$instance\", hostname!=\"-\"} * 10) or openwrt_wireless_station_info{instance=~\"$instance\"}))",
           "format": "table",
           "instant": true,
-          "legendFormat": "{{display}}",
           "range": false,
-          "refId": "B"
+          "refId": "A"
         }
       ],
       "transformations": [
@@ -1249,41 +1287,28 @@
           "options": {
             "keepLabels": [
               "mac",
-              "hostname",
-              "display",
-              "instance"
+              "hostname"
             ]
           }
         },
         {
-          "id": "joinByField",
+          "id": "organize",
           "options": {
-            "byField": "mac",
-            "mode": "outer"
-          }
-        },
-        {
-          "id": "partitionByValues",
-          "options": {
-            "fields": [
-              "mac"
-            ],
-            "keepFields": true
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "exclude": {
-              "names": [
-                "Value #B",
-                "Time #B",
-                "__name__",
-                "job",
-                "instance",
-                "hostname"
-              ]
-            }
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "Value": true,
+              "job": true,
+              "instance": true,
+              "iface": true,
+              "ip": true,
+              "ssid": true
+            },
+            "indexByName": {
+              "hostname": 0,
+              "mac": 1
+            },
+            "renameByName": {}
           }
         }
       ]
@@ -1409,6 +1434,6 @@
   "timezone": "browser",
   "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 11,
+  "version": 12,
   "weekStart": ""
 }
