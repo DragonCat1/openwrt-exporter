@@ -1143,7 +1143,7 @@
     {
       "type": "state-timeline",
       "title": "无线设备在线状态",
-      "description": "同 MAC 只一行：先 max by (instance,mac)；右侧再 max by (instance,mac,hostname) + topk 保证每个 mac 仅一条 hostname（优先非 \"-\"），然后 group_left——避免右侧多条时一对多展开成 `-|mac` 与具名两行。图例 {{hostname}} | {{mac}}。勿把 ip/ssid 放入分组。",
+      "description": "同 MAC 只一行：max by (instance, mac) 去掉 ip/ssid 等分裂维度；再用 group_left(hostname) 挂上当前主机名（优先非 \"-\"）。图例：hostname | mac。勿把 ip/ssid 放入本面板分组。同 hostname 不同 MAC 仍为两行。设备消失视为离线。",
       "id": 19,
       "gridPos": {
         "h": 8,
@@ -1216,7 +1216,7 @@
       },
       "targets": [
         {
-          "expr": "max by (instance, mac) (openwrt_wireless_station_info{instance=~\"$instance\"}) * on (instance, mac) group_left (hostname) ( (topk by (instance, mac) (1, max by (instance, mac, hostname) ( (openwrt_wireless_station_info{instance=~\"$instance\", hostname!=\"-\"} * 10) or openwrt_wireless_station_info{instance=~\"$instance\"} ) )) > bool 0)",
+          "expr": "max by (instance, mac) (openwrt_wireless_station_info{instance=~\"$instance\"}) * on (instance, mac) group_left (hostname) (topk by (instance, mac) (1, (openwrt_wireless_station_info{instance=~\"$instance\", hostname!=\"-\"} * 10) or openwrt_wireless_station_info{instance=~\"$instance\"}) > bool 0)",
           "legendFormat": "{{hostname}} | {{mac}}",
           "refId": "A"
         }
@@ -1343,6 +1343,6 @@
   "timezone": "browser",
   "title": "OpenWrt 监控",
   "uid": "openwrt-exporter",
-  "version": 10,
+  "version": 9,
   "weekStart": ""
 }

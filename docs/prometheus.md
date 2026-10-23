@@ -79,7 +79,7 @@ openwrt_wireless_station_info
 
 再 merge，保证**一行一设备**（见仪表盘「无线站点」面板）。
 
-**在线状态按 mac 聚合且保留主机名**：`station_info` 含 hostname/ip/ssid，直接画 timeline 易拆行。须先 `max by (instance, mac)`，再 `group_left(hostname)`——且**右侧每个 (instance,mac) 只能有一条**（先 `max by (instance, mac, hostname)`，再 `topk by (instance, mac) (1, …)`，优先 `hostname!="-"`）。若右侧同 mac 同时存在 `-` 与具名，`group_left` 会一对多展开又变两行。图例 `{{hostname}} | {{mac}}`。同 hostname 不同 MAC 仍为两行（正确）。
+**在线状态按 mac 聚合且保留主机名**：`station_info` 含 hostname/ip/ssid，直接画 timeline 会因 ip/ssid 或 `-`→具名 拆成多行。面板先 `max by (instance, mac) (...)`（**不**把 ip/ssid 放进分组），再 `* on (instance, mac) group_left (hostname)` 挂上当前主机名（`topk` 优先 `hostname!="-"`），图例 `{{hostname}} | {{mac}}`。exporter 指标仍保留全部 label。同 hostname 不同 MAC 仍为两行（正确）。
 
 连接跟踪数量（仪表盘主曲线用 entries；可选参考 max）：
 
