@@ -620,7 +620,7 @@
       },
       "targets": [
         {
-          "expr": "rate(openwrt_network_receive_bytes_total{instance=~\"$instance\", device=~\"$device\"}[5m]) * 8",
+          "expr": "rate(openwrt_network_receive_bytes_total{instance=~\"$instance\", device=~\"$device\"}[$__rate_interval]) * 8",
           "legendFormat": "{{device}} rx",
           "refId": "A"
         }
@@ -666,7 +666,7 @@
       },
       "targets": [
         {
-          "expr": "rate(openwrt_network_transmit_bytes_total{instance=~\"$instance\", device=~\"$device\"}[5m]) * 8",
+          "expr": "rate(openwrt_network_transmit_bytes_total{instance=~\"$instance\", device=~\"$device\"}[$__rate_interval]) * 8",
           "legendFormat": "{{device}} tx",
           "refId": "A"
         }
@@ -1127,13 +1127,13 @@
           "refId": "TxPhy"
         },
         {
-          "expr": "(rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[5m]) * 8) * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
+          "expr": "(rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[$__rate_interval]) * 8) * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "format": "table",
           "instant": true,
           "refId": "RxBps"
         },
         {
-          "expr": "(rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[5m]) * 8) * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
+          "expr": "(rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[$__rate_interval]) * 8) * on(instance, mac, iface) group_left(hostname, ip, ssid) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "format": "table",
           "instant": true,
           "refId": "TxBps"
@@ -1270,12 +1270,12 @@
       },
       "targets": [
         {
-          "expr": "rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[5m]) * 8 * on(instance, mac, iface) group_left(hostname, ip) openwrt_wireless_station_info{instance=~\"$instance\"}",
+          "expr": "rate(openwrt_wireless_station_receive_bytes_total{instance=~\"$instance\"}[$__rate_interval]) * 8 * on(instance, mac, iface) group_left(hostname, ip) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "legendFormat": "{{hostname}} {{mac}} 接收",
           "refId": "A"
         },
         {
-          "expr": "rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[5m]) * 8 * on(instance, mac, iface) group_left(hostname, ip) openwrt_wireless_station_info{instance=~\"$instance\"}",
+          "expr": "rate(openwrt_wireless_station_transmit_bytes_total{instance=~\"$instance\"}[$__rate_interval]) * 8 * on(instance, mac, iface) group_left(hostname, ip) openwrt_wireless_station_info{instance=~\"$instance\"}",
           "legendFormat": "{{hostname}} {{mac}} 发送",
           "refId": "B"
         }
