@@ -40,27 +40,29 @@ scrape_configs:
 
 ## `rate()` 示例
 
+吞吐示例用 Grafana 变量 `$__rate_interval`（随面板时间范围与 scrape 间隔自适应）；裸 Prometheus 可改回固定窗口如 `[5m]`。
+
 接口吞吐（bps）：
 
 ```promql
-rate(openwrt_network_receive_bytes_total[5m]) * 8
-rate(openwrt_network_transmit_bytes_total[5m]) * 8
+rate(openwrt_network_receive_bytes_total[$__rate_interval]) * 8
+rate(openwrt_network_transmit_bytes_total[$__rate_interval]) * 8
 ```
 
 按设备过滤：
 
 ```promql
-rate(openwrt_network_receive_bytes_total{device="br-lan"}[5m]) * 8
+rate(openwrt_network_receive_bytes_total{device="br-lan"}[$__rate_interval]) * 8
 ```
 
 无线每站吞吐（带 hostname join）：
 
 ```promql
-rate(openwrt_wireless_station_receive_bytes_total[5m]) * 8
+rate(openwrt_wireless_station_receive_bytes_total[$__rate_interval]) * 8
   * on(instance, mac, iface) group_left(hostname, ip)
   openwrt_wireless_station_info
 
-rate(openwrt_wireless_station_transmit_bytes_total[5m]) * 8
+rate(openwrt_wireless_station_transmit_bytes_total[$__rate_interval]) * 8
   * on(instance, mac, iface) group_left(hostname, ip)
   openwrt_wireless_station_info
 ```
